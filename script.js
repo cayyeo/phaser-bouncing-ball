@@ -1,5 +1,5 @@
 let WIDTH = 800;
-let HEIGHT = 500;
+let HEIGHT = 600;
 
 const config = {
     type: Phaser.AUTO,
