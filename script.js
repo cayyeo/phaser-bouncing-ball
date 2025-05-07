@@ -14,10 +14,8 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-let ball;
+let balls = []; // Array to hold all balls
 let ballSize = 80;
-let yspeed = 0.5;
-let xspeed = 1.0;
 let lives = 10; // Initialize lives to 10
 let livesText; // Variable to hold the text object
 let gameOverText; // Variable to hold the "Game Over" text object
@@ -27,26 +25,26 @@ function preload() {
 }
 
 function create() {
-    ball = this.add.sprite(WIDTH / 2, HEIGHT / 2, "ball"); // x, y, and the ball "key"
-    ball.setDisplaySize(ballSize, ballSize); // width, height
+    // Create the main ball
+    createBall(this, WIDTH / 2, HEIGHT / 2, ballSize, 1.0, 0.5, true); // Main ball decreases lives
 
-    // Add a pointerdown event listener to the ball
-    ball.setInteractive();
-    ball.on('pointerdown', () => {
-        if (lives > 0) {
-            // Reduce the ball size by 10%
-            ballSize *= 0.9;
-            ball.setDisplaySize(ballSize, ballSize);
+    // Create 50 balls that decrease lives when touching walls
+    for (let i = 0; i < 50; i++) {
+        let x = Phaser.Math.Between(ballSize / 2, WIDTH - ballSize / 2);
+        let y = Phaser.Math.Between(ballSize / 2, HEIGHT - ballSize / 2);
+        let xspeed = Phaser.Math.FloatBetween(-2, 2);
+        let yspeed = Phaser.Math.FloatBetween(-2, 2);
+        createBall(this, x, y, ballSize, xspeed, yspeed, true); // Pass `true` for balls that decrease lives
+    }
 
-            // Increase the speed by 10%
-            xspeed *= 1.1;
-            yspeed *= 1.1;
-
-            // Increase lives by 1
-            lives++;
-            livesText.setText(`Lives: ${lives}`); // Update the text display
-        }
-    });
+    // Create 50 balls that increase lives when touching walls
+    for (let i = 0; i < 50; i++) {
+        let x = Phaser.Math.Between(ballSize / 2, WIDTH - ballSize / 2);
+        let y = Phaser.Math.Between(ballSize / 2, HEIGHT - ballSize / 2);
+        let xspeed = Phaser.Math.FloatBetween(-2, 2);
+        let yspeed = Phaser.Math.FloatBetween(-2, 2);
+        createBall(this, x, y, ballSize, xspeed, yspeed, false); // Pass `false` for balls that increase lives
+    }
 
     // Add text to display the number of lives
     livesText = this.add.text(10, 10, `Lives: ${lives}`, {
@@ -63,62 +61,68 @@ function create() {
     gameOverText.setVisible(false); // Hide it initially
 }
 
+function createBall(scene, x, y, size, xspeed, yspeed, givesLife) {
+    let ball = {
+        sprite: scene.add.sprite(x, y, "ball"),
+        size: size,
+        xspeed: xspeed,
+        yspeed: yspeed,
+        givesLife: givesLife // Add a property to indicate if the ball gives lives
+    };
+    ball.sprite.setDisplaySize(size, size);
+    ball.sprite.setInteractive();
+
+    // Add a pointerdown event listener to the ball
+    ball.sprite.on('pointerdown', () => {
+        if (lives > 0) {
+            if (ball.givesLife) {
+                // Increase lives by 1 if the ball gives lives
+                lives++;
+            } else {
+                // Reduce the ball size by 10% for normal balls
+                ball.size *= 0.9;
+                ball.sprite.setDisplaySize(ball.size, ball.size);
+
+                // Increase the speed by 10%
+                ball.xspeed *= 1.1;
+                ball.yspeed *= 1.1;
+            }
+            livesText.setText(`Lives: ${lives}`); // Update the text display
+        }
+    });
+
+    balls.push(ball); // Add the ball to the array
+}
+
 function update() {
     if (lives <= 0) {
-        // Stop the ball's movement
-        xspeed = 0;
-        yspeed = 0;
+        // Stop all balls' movement
+        balls.forEach(ball => {
+            ball.xspeed = 0;
+            ball.yspeed = 0;
+        });
 
         // Show the "Game Over" text
         gameOverText.setVisible(true);
         return; // Exit the update loop
     }
 
-    ball.y += yspeed;
-    ball.x += xspeed;
+    balls.forEach(ball => {
+        ball.sprite.x += ball.xspeed;
+        ball.sprite.y += ball.yspeed;
 
-    // Check for collision with top or bottom walls
-    if (ball.y >= HEIGHT - ballSize / 2 || ball.y <= ballSize / 2) {
-        yspeed *= -1; // Reverse direction
-        lives--; // Decrease lives by 1
-        livesText.setText(`Lives: ${lives}`); // Update the text display
-    }
+        // Check for collision with top or bottom walls
+        if (ball.sprite.y >= HEIGHT - ball.size / 2 || ball.sprite.y <= ball.size / 2) {
+            ball.yspeed *= -1; // Reverse direction
+            lives--; // Decrease lives by 1
+            livesText.setText(`Lives: ${lives}`); // Update the text display
+        }
 
-    // Check for collision with left or right walls
-    if (ball.x >= WIDTH - ballSize / 2 || ball.x <= ballSize / 2) {
-        xspeed *= -1; // Reverse direction
-        lives--; // Decrease lives by 1
-        livesText.setText(`Lives: ${lives}`); // Update the text display
-    }
+        // Check for collision with left or right walls
+        if (ball.sprite.x >= WIDTH - ball.size / 2 || ball.sprite.x <= ball.size / 2) {
+            ball.xspeed *= -1; // Reverse direction
+            lives--; // Decrease lives by 1
+            livesText.setText(`Lives: ${lives}`); // Update the text display
+        }
+    });
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
